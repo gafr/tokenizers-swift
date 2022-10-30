@@ -1,4 +1,4 @@
-.PHONY: all ffi build
+.PHONY: all ffi build clean
 
 all: ffi build
 
@@ -7,3 +7,7 @@ ffi:
 
 build:
 	swift build
+
+clean:
+	rm -rf .build
+	$(MAKE) -C ffi clean

@@ -1,9 +1,15 @@
+import TokenizersFFI
+
 public class Tokenizer {
     /// The ``Model`` in use by the Tokenizer
     let model: Model
 
     public init(_ model: Model) {
         self.model = model
+    }
+
+    public func hello() {
+        hello_world()
     }
 }
 
