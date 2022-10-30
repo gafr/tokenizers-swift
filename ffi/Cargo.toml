@@ -1,0 +1,11 @@
+[package]
+name = "tokenizers-ffi"
+version = "0.1.0"
+edition = "2021"
+authors = ["Takanori Ishikawa <takanori.ishikawa@gmail.com>"]
+
+[dependencies]
+tokenizers = "^0.13"
+
+[lib]
+crate-type = ["cdylib"]
