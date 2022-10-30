@@ -6,27 +6,44 @@ import PackageDescription
 let package = Package(
     name: "Tokenizers",
     products: [
-        // Products define the executables and libraries a package produces, and make them visible to other packages.
         .library(
             name: "Tokenizers",
             targets: ["Tokenizers", "TokenizersFFI"])
+        // The "CargoBuild" plugin is used only within this package, so there is
+        // no need to declare a `plugin` product.
+        /*
+        .plugin(
+            name: "CargoBuild",
+            targets: [
+                "CargoBuild"
+            ]
+        ),
+        */
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
         // .package(url: /* package url */, from: "1.0.0"),
     ],
     targets: [
+        .plugin(
+            name: "CargoBuild",
+            capability: .buildTool()
+        ),
         .target(
             name: "Tokenizers",
             dependencies: ["TokenizersFFI"],
             linkerSettings: [
                 .linkedLibrary("tokenizers_ffi"),
                 .unsafeFlags([
-                    "-L./ffi/target/debug"
+                    // TODO: Get the plugin path programmatically.
+                    "-L.build/plugins/outputs/swift-tokenizers/TokenizersFFI/CargoBuild/GeneratedFiles/debug"
                 ]),
             ]
         ),
-        .target(name: "TokenizersFFI", dependencies: []),
+        .target(
+            name: "TokenizersFFI",
+            dependencies: [],
+            plugins: ["CargoBuild"]),
         .testTarget(
             name: "TokenizersTests",
             dependencies: ["Tokenizers"]),
