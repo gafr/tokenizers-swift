@@ -9,26 +9,12 @@ let package = Package(
         .library(
             name: "Tokenizers",
             targets: ["Tokenizers", "TokenizersFFI"])
-        // The "CargoBuild" plugin is used only within this package, so there is
-        // no need to declare a `plugin` product.
-        /*
-        .plugin(
-            name: "CargoBuild",
-            targets: [
-                "CargoBuild"
-            ]
-        ),
-        */
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
         // .package(url: /* package url */, from: "1.0.0"),
     ],
     targets: [
-        .plugin(
-            name: "CargoBuild",
-            capability: .buildTool()
-        ),
         .target(
             name: "Tokenizers",
             dependencies: ["TokenizersFFI"],
@@ -36,14 +22,14 @@ let package = Package(
                 .linkedLibrary("tokenizers_ffi"),
                 .unsafeFlags([
                     // TODO: Get the plugin path programmatically.
-                    "-L.build/plugins/outputs/swift-tokenizers/TokenizersFFI/CargoBuild/GeneratedFiles/debug"
+                    "-Lffi/target/debug"
                 ]),
             ]
         ),
         .target(
             name: "TokenizersFFI",
             dependencies: [],
-            plugins: ["CargoBuild"]),
+            plugins: []),
         .testTarget(
             name: "TokenizersTests",
             dependencies: ["Tokenizers"]),
