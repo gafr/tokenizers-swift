@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::error::{Result, TokenizersError};
 use crate::utils::RustOffsets;
+use serde::{Deserialize, Serialize};
 use tk::{pre_tokenizers::whitespace::Whitespace, PreTokenizedString, PreTokenizer};
 use tokenizers as tk;
 
@@ -43,6 +44,7 @@ impl RustPreTokenizedString {
 }
 
 /// This pre-tokenizer simply splits using the following regex: `\w+|[^\w\s]+`
+#[derive(Clone, Serialize, Deserialize)]
 pub struct RustWhitespace {
     pre_tokenizer: Arc<Whitespace>,
 }

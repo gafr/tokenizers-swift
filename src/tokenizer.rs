@@ -1,13 +1,26 @@
+use crate::{RustBpe, RustWhitespace};
+
 use super::error::Result;
 use std::sync::{Arc, RwLock};
-use tk::AddedToken;
+use tk::{AddedToken, DecoderWrapper, NormalizerWrapper, PostProcessorWrapper, TokenizerImpl};
 use tokenizers as tk;
 
+type Tokenizer =
+    TokenizerImpl<RustBpe, NormalizerWrapper, RustWhitespace, PostProcessorWrapper, DecoderWrapper>;
+
 pub struct RustTokenizer {
-    tokenizer: Arc<tk::tokenizer::Tokenizer>,
+    tokenizer: Arc<RwLock<Tokenizer>>,
 }
 
 impl RustTokenizer {
+    pub fn new(model: Arc<RustBpe>) -> Self {
+        let tokenizer = Tokenizer::new(model.as_ref().clone());
+
+        Self {
+            tokenizer: Arc::new(RwLock::new(tokenizer)),
+        }
+    }
+
     pub fn from_pretrained(
         identifier: &str,
         revision: String,
@@ -21,19 +34,36 @@ impl RustTokenizer {
                 .map(|(k, v)| (k.to_string(), v.to_string()))
                 .collect(),
         };
-        let tokenizer = tk::tokenizer::Tokenizer::from_pretrained(identifier, Some(params))?;
+        let tokenizer = Tokenizer::from_pretrained(identifier, Some(params))?;
 
         Ok(Self {
-            tokenizer: Arc::new(tokenizer),
+            tokenizer: Arc::new(RwLock::new(tokenizer)),
         })
     }
 
     pub fn encode(&self, input: &str, add_special_tokens: bool) -> Result<Arc<RustEncoding>> {
         let encoding = self
             .tokenizer
+            .read()
+            .unwrap()
             .encode_char_offsets(input, add_special_tokens)?;
 
         Ok(Arc::new(RustEncoding::new(Arc::new(encoding))))
+    }
+
+    pub fn get_pre_tokenizer(&self) -> Option<Arc<RustWhitespace>> {
+        self.tokenizer
+            .read()
+            .unwrap()
+            .get_pre_tokenizer()
+            .map(|pt| Arc::new(pt.clone()))
+    }
+
+    pub fn set_pre_tokenizer(&self, pre_tokenizer: Arc<RustWhitespace>) {
+        self.tokenizer
+            .write()
+            .unwrap()
+            .with_pre_tokenizer(pre_tokenizer.as_ref().clone());
     }
 }
 
