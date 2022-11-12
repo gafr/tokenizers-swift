@@ -4,11 +4,39 @@ use crate::RustBpeTrainer;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, RwLock};
 use tk::models::bpe::{Vocab, BPE};
+use tk::ModelWrapper;
 use tokenizers as tk;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct RustBpe {
-    pub(crate) model: Arc<RwLock<tk::models::bpe::BPE>>,
+    #[serde(flatten)]
+    pub(crate) model: Arc<RwLock<ModelWrapper>>,
+}
+
+impl RustBpe {
+    pub(crate) fn with_subtype<F, R>(&self, callback: F) -> R
+    where
+        F: FnOnce(&BPE) -> R,
+    {
+        if let ModelWrapper::BPE(bpe) = self.model.read().as_deref().unwrap() {
+            callback(bpe)
+        } else {
+            panic!()
+        }
+    }
+
+    pub(crate) fn with_subtype_mut<F, R>(&self, callback: F) -> R
+    where
+        F: FnOnce(&mut BPE) -> R,
+    {
+        let mut m = self.model.write().unwrap();
+
+        if let ModelWrapper::BPE(b) = &mut *m {
+            callback(b)
+        } else {
+            panic!()
+        }
+    }
 }
 
 impl tk::Model for RustBpe {
@@ -100,14 +128,15 @@ impl RustBpe {
         }
 
         let bpe = builder.build()?;
+        let wrapper = ModelWrapper::BPE(bpe);
 
         Ok(Self {
-            model: Arc::new(RwLock::new(bpe)),
+            model: Arc::new(RwLock::new(wrapper)),
         })
     }
 
     pub fn get_unk_token(&self) -> Option<String> {
-        self.model.read().unwrap().get_unk_token().clone()
+        self.with_subtype(|bpe| bpe.get_unk_token().clone())
     }
 }
 
