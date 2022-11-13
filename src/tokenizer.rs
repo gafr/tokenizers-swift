@@ -1,6 +1,6 @@
-use crate::{RustBpe, RustBpeTrainer, RustWhitespace};
-
 use super::error::Result;
+use crate::utils::RustVocab;
+use crate::{RustBpe, RustBpeTrainer, RustWhitespace};
 use std::sync::{Arc, RwLock};
 use tk::{
     AddedToken, DecoderWrapper, Model, NormalizerWrapper, PostProcessorWrapper, TokenizerImpl,
@@ -80,6 +80,20 @@ impl RustTokenizer {
         Ok(self.tokenizer.read().unwrap().save(path, pretty)?)
     }
 
+    pub fn get_vocab(&self, with_added_tokens: bool) -> RustVocab {
+        self.tokenizer.read().unwrap().get_vocab(with_added_tokens)
+    }
+
+    pub fn add_tokens(&self, tokens: Vec<Arc<RustAddedToken>>) -> usize {
+        let tokens: Vec<AddedToken> = tokens.iter().map(|t| t.as_ref().into()).collect();
+        self.tokenizer.write().unwrap().add_tokens(&tokens)
+    }
+
+    pub fn add_special_tokens(&self, tokens: Vec<Arc<RustAddedToken>>) -> usize {
+        let tokens: Vec<AddedToken> = tokens.iter().map(|t| t.as_ref().into()).collect();
+        self.tokenizer.write().unwrap().add_special_tokens(&tokens)
+    }
+
     pub fn get_model(&self) -> Arc<RustBpe> {
         Arc::new(self.tokenizer.read().unwrap().get_model().clone())
     }
@@ -128,18 +142,17 @@ pub struct RustAddedToken {
     token: Arc<RwLock<AddedToken>>,
 }
 
-impl RustAddedToken {
-    /// Clone the underlying token.
-    pub fn clone_token(&self) -> AddedToken {
-        self.token.read().unwrap().clone()
-    }
-}
-
 impl From<tk::AddedToken> for RustAddedToken {
     fn from(token: tk::AddedToken) -> Self {
         Self {
             token: Arc::new(RwLock::new(token)),
         }
+    }
+}
+
+impl From<&RustAddedToken> for tk::AddedToken {
+    fn from(token: &RustAddedToken) -> Self {
+        token.token.read().unwrap().clone()
     }
 }
 

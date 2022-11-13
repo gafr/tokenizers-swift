@@ -1,8 +1,27 @@
+use std::collections::HashMap;
+
 use crate::error::TokenizersError;
 use crate::UniffiCustomTypeConverter;
-pub use tk::models::bpe::Merges as RustMerges;
+pub use tk::models::bpe::{Merges as RustMerges, Vocab as RustVocab};
 pub use tk::Offsets as RustOffsets;
 use tokenizers as tk;
+
+pub type RustUSize = usize;
+
+impl UniffiCustomTypeConverter for RustUSize {
+    type Builtin = u64;
+
+    fn into_custom(value: Self::Builtin) -> uniffi::Result<Self>
+    where
+        Self: Sized,
+    {
+        Ok(usize::try_from(value)?)
+    }
+
+    fn from_custom(value: Self) -> Self::Builtin {
+        value as u64
+    }
+}
 
 impl UniffiCustomTypeConverter for RustMerges {
     type Builtin = Vec<Vec<String>>;
@@ -34,7 +53,23 @@ impl UniffiCustomTypeConverter for RustMerges {
     }
 }
 
-impl UniffiCustomTypeConverter for tk::Offsets {
+// For type alias, we need to a custom converter without any conversion.
+impl UniffiCustomTypeConverter for RustVocab {
+    type Builtin = HashMap<String, u32>;
+
+    fn into_custom(value: Self::Builtin) -> uniffi::Result<Self>
+    where
+        Self: Sized,
+    {
+        Ok(value)
+    }
+
+    fn from_custom(value: Self) -> Self::Builtin {
+        value
+    }
+}
+
+impl UniffiCustomTypeConverter for RustOffsets {
     type Builtin = Vec<u64>;
 
     fn into_custom(value: Self::Builtin) -> uniffi::Result<Self>

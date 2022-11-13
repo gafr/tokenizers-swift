@@ -1,9 +1,9 @@
 use crate::error::{Result, TokenizersError};
-use crate::utils::RustMerges;
+use crate::utils::{RustMerges, RustVocab};
 use crate::RustBpeTrainer;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, RwLock};
-use tk::models::bpe::{Vocab, BPE};
+use tk::models::bpe::BPE;
 use tk::ModelWrapper;
 use tokenizers as tk;
 
@@ -77,12 +77,11 @@ impl tk::Model for RustBpe {
 
 impl RustBpe {
     pub fn new(
-        vocab: Option<tk::models::bpe::Vocab>,
+        vocab: Option<RustVocab>,
         merges: Option<RustMerges>,
         vocab_file: Option<String>,
         merges_file: Option<String>,
-        // UniFFI doesn't support usize type.
-        cache_capacity: Option<u64>,
+        cache_capacity: Option<usize>,
         dropout: Option<f32>,
         unk_token: Option<String>,
         continuing_subword_prefix: Option<String>,
@@ -107,8 +106,6 @@ impl RustBpe {
             builder = builder.files(vocab_file.into(), merges_file.into());
         }
         if let Some(cache_capacity) = cache_capacity {
-            let cache_capacity = usize::try_from(cache_capacity)
-                .map_err(|e| TokenizersError::ValueError(format!("cache_capacity: {}", e)))?;
             builder = builder.cache_capacity(cache_capacity);
         }
         if let Some(dropout) = dropout {
@@ -143,7 +140,7 @@ impl RustBpe {
 // Associated functions
 #[derive(Debug)]
 pub struct RustBpeReadFileReturn {
-    pub vocab: Vocab,
+    pub vocab: RustVocab,
     pub merges: tk::models::bpe::Merges,
 }
 
