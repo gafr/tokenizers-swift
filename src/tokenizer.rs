@@ -3,12 +3,27 @@ use crate::utils::RustVocab;
 use crate::{RustBpe, RustBpeTrainer, RustWhitespace};
 use std::sync::{Arc, RwLock};
 use tk::{
-    AddedToken, DecoderWrapper, Model, NormalizerWrapper, PostProcessorWrapper, TokenizerImpl,
+    AddedToken, DecoderWrapper, EncodeInput, InputSequence, Model, NormalizerWrapper,
+    PostProcessorWrapper, TokenizerImpl,
 };
 use tokenizers as tk;
 
 type Tokenizer =
     TokenizerImpl<RustBpe, NormalizerWrapper, RustWhitespace, PostProcessorWrapper, DecoderWrapper>;
+
+pub enum RustInputSequence {
+    Raw { raw_value: String },
+    PreTokenized { tokens: Vec<String> },
+}
+
+impl From<RustInputSequence> for InputSequence<'_> {
+    fn from(seq: RustInputSequence) -> Self {
+        match seq {
+            RustInputSequence::Raw { raw_value } => raw_value.into(),
+            RustInputSequence::PreTokenized { tokens } => tokens.into(),
+        }
+    }
+}
 
 pub struct RustTokenizer {
     tokenizer: Arc<RwLock<Tokenizer>>,
@@ -52,7 +67,23 @@ impl RustTokenizer {
         })
     }
 
-    pub fn encode(&self, input: &str, add_special_tokens: bool) -> Result<Arc<RustEncoding>> {
+    pub fn encode(
+        &self,
+        input: RustInputSequence,
+        pair: Option<RustInputSequence>,
+        add_special_tokens: bool,
+    ) -> Result<Arc<RustEncoding>> {
+        let input: InputSequence = match input {
+            RustInputSequence::Raw { raw_value } => raw_value.into(),
+            RustInputSequence::PreTokenized { tokens } => tokens.into(),
+        };
+
+        let input: EncodeInput = if let Some(pair) = pair {
+            EncodeInput::Dual(input, pair.into())
+        } else {
+            EncodeInput::Single(input)
+        };
+
         let encoding = self
             .tokenizer
             .read()
@@ -60,6 +91,14 @@ impl RustTokenizer {
             .encode_char_offsets(input, add_special_tokens)?;
 
         Ok(Arc::new(RustEncoding::new(Arc::new(encoding))))
+    }
+
+    pub fn decode(&self, ids: Vec<u32>, skip_special_tokens: bool) -> Result<String> {
+        Ok(self
+            .tokenizer
+            .read()
+            .unwrap()
+            .decode(ids, skip_special_tokens)?)
     }
 
     pub fn train(&self, files: Vec<String>, trainer: Option<Arc<RustBpeTrainer>>) -> Result<()> {
@@ -134,6 +173,18 @@ impl RustEncoding {
 
     pub fn get_tokens(&self) -> Vec<String> {
         self.encoding.get_tokens().to_vec()
+    }
+
+    pub fn get_ids(&self) -> Vec<u32> {
+        self.encoding.get_ids().to_vec()
+    }
+
+    pub fn get_type_ids(&self) -> Vec<u32> {
+        self.encoding.get_type_ids().to_vec()
+    }
+
+    pub fn get_attention_mask(&self) -> Vec<u32> {
+        self.encoding.get_attention_mask().to_vec()
     }
 }
 
