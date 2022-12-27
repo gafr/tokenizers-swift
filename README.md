@@ -3,7 +3,9 @@
 [![tokenizer-swift CI](https://github.com/ishikawa/tokenizers-swift/actions/workflows/lib.yml/badge.svg)](https://github.com/ishikawa/tokenizers-swift/actions/workflows/lib.yml)
 ![license](https://img.shields.io/static/v1?label=license&message=MIT&color=blue)
 
-**Under heavily development now**: A Swift binding for [HuggingFace Tokenizers library](https://github.com/huggingface/tokenizers).
+**Under development. This library is NOT ready for production and the author doesn't have enough time and motivation to continue development the library at least for now.**
+
+A Swift binding for [HuggingFace Tokenizers library](https://github.com/huggingface/tokenizers).
 
 >Provides an implementation of today's most used tokenizers, with a focus on performance and versatility.
 
